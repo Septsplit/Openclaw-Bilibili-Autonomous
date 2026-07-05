@@ -1,0 +1,9 @@
+{
+  "max_energy": 20,
+  "current_energy": 20.0,
+  "disabled": false,
+  "refill_seconds": 1800,
+  "last_refill_ts": null,
+  "exhausted_until": null,
+  "total_consumed": 0
+}

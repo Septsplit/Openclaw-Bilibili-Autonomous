@@ -1,0 +1,5 @@
+{
+  "user": "<PLACEHOLDER 请在 Web 首次访问时 setup>",
+  "hash": "<PLACEHOLDER>",
+  "_note": "Use Web http://127.0.0.1:8765 首次访问会自动跳转 setup 页面."
+}
