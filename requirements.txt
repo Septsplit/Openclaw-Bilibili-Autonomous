@@ -1,0 +1,11 @@
+# v3 依赖：纯 B 站 API 工具集，无 LLM
+bilibili-api-python>=17.0.0
+colorama>=0.4.6
+
+# Web 面板（v2.2 保留）
+flask>=3.0
+bcrypt>=5.0
+
+# Whisper（v3 工具：OpenClaw 主动调用，本地 ASR）
+# 首次跑会下 ~150MB 模型；ffmpeg 用户自己 brew install
+openai-whisper
