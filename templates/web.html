@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>bilibili-autonomous 控制面板 v4</title>
+<style>
+  :root {
+    --primary: #ff7e29; --primary-h: #ffa552;
+    --bg: #0f1419; --surface: #1d2126; --surface-h: #2d333b;
+    --text: #d7dadc; --muted: #9aa0a6;
+    --green: #4caf50; --red: #f44336; --orange: #ff9800;
+    --radius: 8px;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+         background: var(--bg); color: var(--text); margin: 0; padding: 0;
+         line-height: 1.5; }
+  header { background: var(--surface); padding: 14px 28px;
+           border-bottom: 1px solid var(--surface-h);
+           display: flex; justify-content: space-between; align-items: center;
+           box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  header h1 { font-size: 18px; margin: 0; color: var(--primary);
+              display: flex; align-items: center; gap: 8px; }
+  header h1::before { content: "🤖"; font-size: 22px; }
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; padding-bottom: 80px; }
+  h2 { color: var(--primary); border-bottom: 1px solid var(--surface-h);
+       padding-bottom: 8px; font-size: 16px; text-transform: uppercase;
+       letter-spacing: 0.5px; }
+  h3 { color: var(--primary-h); margin-top: 24px; font-size: 14px; }
+  section { background: var(--surface); padding: 20px 24px; margin-bottom: 16px;
+            border-radius: var(--radius); box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: repeat(3, 1fr); }
+  label { display: block; margin: 8px 0 4px; color: var(--muted);
+          font-size: 12px; }
+  label small { color: var(--text); opacity: 0.6; }
+  .help { color: var(--muted); font-size: 11px; margin-left: 6px; }
+  input, select, textarea { width: 100%; box-sizing: border-box;
+         background: var(--bg); color: var(--text); border: 1px solid var(--surface-h);
+         padding: 8px 12px; border-radius: 4px;
+         font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 13px; }
+  input:focus, select:focus, textarea:focus { outline: none;
+        border-color: var(--primary); }
+  input[type=checkbox] { width: 18px; height: 18px; }
+  .toggle-row { display: flex; align-items: center; gap: 12px;
+                 padding: 8px 12px; background: var(--bg);
+                 border-radius: 4px; margin: 4px 0; }
+  .toggle-row .name { flex: 1; font-weight: 500; }
+  .toggle-row .badge { font-size: 11px; padding: 2px 8px;
+                       border-radius: 12px; background: var(--surface-h); }
+  .toggle-row.on .badge { background: var(--green); color: white; }
+  .toggle-row.off .badge { background: var(--red); color: white; }
+  button { background: var(--primary); color: var(--bg); border: none;
+           padding: 10px 18px; border-radius: 4px; cursor: pointer;
+           font-weight: 600; margin-right: 8px; transition: all 0.15s; }
+  button:hover { background: var(--primary-h); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.secondary { background: var(--surface-h); color: var(--text); }
+  button.secondary:hover { background: #3d434b; }
+  button.danger { background: var(--red); color: white; }
+  pre { background: var(--bg); padding: 12px; border-radius: 4px;
+        overflow-x: auto; font-size: 12px; max-height: 300px; overflow-y: auto; }
+  .stat-card { background: var(--bg); border-radius: 6px; padding: 14px;
+               text-align: center; }
+  .stat-card .val { font-size: 24px; color: var(--primary-h);
+                     font-weight: 700; }
+  .stat-card .label { font-size: 11px; color: var(--muted);
+                       text-transform: uppercase; letter-spacing: 1px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px;
+           background: var(--surface-h); font-size: 11px; margin-left: 8px; }
+  .badge.green { background: var(--green); color: white; }
+  .badge.red { background: var(--red); color: white; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--surface-h); }
+  th { color: var(--muted); font-weight: normal; font-size: 11px; text-transform: uppercase; }
+  .hidden { display: none; }
+  #toast { position: fixed; top: 16px; right: 16px; padding: 12px 20px;
+           border-radius: 4px; background: var(--surface-h); color: var(--text);
+           opacity: 0; transition: opacity 0.3s; z-index: 1000;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+  #toast.show { opacity: 1; }
+  #toast.ok { background: var(--green); color: white; }
+  #toast.err { background: var(--red); color: white; }
+  .tool-section { background: var(--surface); border-radius: var(--radius);
+                  padding: 20px; margin-bottom: 16px; }
+  .tool-section h3 { margin-top: 0; }
+  .kbd { background: var(--surface-h); padding: 2px 6px; border-radius: 3px;
+          font-family: ui-monospace, "SF Mono", monospace; font-size: 12px;
+          color: var(--primary-h); }
+</style>
+</head>
+<body>
+<header>
+  <h1>bilibili-autonomous v4</h1>
+  <div id="user-area"></div>
+</header>
+
+<div id="toast"></div>
+
+<main>
+  <!-- Disclaimer -->
+  <section id="disclaimer" class="hidden">
+    <h2>使用须知 (v4)</h2>
+    <p>这是一个 <strong>B 站 API 工具集</strong>，由 OpenClaw AI 大脑调用：</p>
+    <ul>
+      <li><b>OpenClaw</b> 自己调 LLM 决策，由本 skill 执行（点赞/投币/评论/弹幕/收藏/关注/私信）</li>
+      <li>本 skill 不内置 AI — 只暴露 atomic 工具 + 阈值门控</li>
+      <li>所有操作走 B 站限流（-799 自动退避）+ 全局冷却</li>
+      <li>Web 仅本机（127.0.0.1），密码 bcrypt 存 <code>Data/web_auth.json</code></li>
+      <li><b>v4 新增</b>：精力值系统（默认 20 / 每个视频 -1 / 耗尽后停 30 分钟）</li>
+    </ul>
+    <p>输入 <code>我同意</code> 继续：</p>
+    <input id="disclaimer-input" placeholder="我同意">
+    <button onclick="acceptDisclaimer()">继续</button>
+  </section>
+
+  <!-- Setup -->
+  <section id="setup" class="hidden">
+    <h2>设置用户名密码</h2>
+    <p>首次访问需要设一个管理员账号（用于登录）。</p>
+    <label>用户名</label>
+    <input id="setup-user">
+    <label>密码（≥6 位）</label>
+    <input id="setup-pw" type="password">
+    <button onclick="doSetup()">设置</button>
+  </section>
+
+  <!-- Login -->
+  <section id="login" class="hidden">
+    <h2>登录</h2>
+    <label>用户名</label>
+    <input id="login-user">
+    <label>密码</label>
+    <input id="login-pw" type="password">
+    <button onclick="doLogin()">登录</button>
+  </section>
+
+  <!-- Main -->
+  <div id="main" class="hidden">
+    <!-- 状态总览 -->
+    <section>
+      <h2>📊 状态总览</h2>
+      <div class="grid grid-3" id="state-stats"></div>
+      <h3>📁 归档 / 高分内容</h3>
+      <ul id="highlights-list" style="list-style: none; padding-left: 0;"></ul>
+      <h3>🔋 精力值</h3>
+      <div id="energy-display">加载中…</div>
+      <h3>💚 心情 (v5.1)</h3>
+      <div id="mood-display">加载中…</div>
+      <button class="secondary" onclick="loadState()">刷新</button>
+    </section>
+
+    <!-- 配置编辑 (按块分组) -->
+    <section>
+      <h2>⚙️ 配置（所有可改项）</h2>
+      <p style="color: var(--muted); font-size: 13px;">
+        改动后点「保存全部」。每组下都有 <span class="help">⌨ ?</span> 帮助提示。
+      </p>
+      <div id="config-form">加载中…</div>
+      <button onclick="saveConfig()">💾 保存全部</button>
+      <button class="secondary" onclick="loadConfig()">🔄 重载</button>
+    </section>
+
+    <!-- Web 设置 -->
+    <section>
+      <h2>🌐 Web 面板设置</h2>
+      <div class="grid grid-2">
+        <div>
+          <label>绑定地址 <span class="help">默认 127.0.0.1（仅本机）</span></label>
+          <input id="web-bind">
+        </div>
+        <div>
+          <label>端口</label>
+          <input id="web-port" type="number">
+        </div>
+      </div>
+      <p style="color: var(--muted); font-size: 13px;">⚠ 改端口后需重启 CLI 进程</p>
+      <button onclick="saveWebSettings()">保存 Web 设置</button>
+    </section>
+
+    <!-- Cookie (v5.9) -->
+    <section>
+      <h2>🍪 B 站 Cookie（指定账号刷取）</h2>
+      <p style="color: var(--muted); font-size: 13px;">
+        粘贴浏览器 Network → Headers → Cookie 那一整段；解析后写入 <code>Data/bilibili_cookies.json</code>。
+      </p>
+      <div id="cookie-status" style="margin: 8px 0;">加载中…</div>
+      <label>整段 Cookie 字符串
+        <span class="help">格式: <code>SESSDATA=...; bili_jct=...; DedeUserID=...; ac_time_value=...</code></span>
+      </label>
+      <textarea id="cookie-input" rows="4"
+        placeholder="SESSDATA=4xxx%2C17xxx; bili_jct=e7xx; DedeUserID=39xxx; ac_time_value=73xxx"></textarea>
+      <div style="display: flex; gap: 8px; margin-top: 8px;">
+        <button onclick="saveCookie()">💾 保存 Cookie</button>
+        <button class="secondary" onclick="loadCookie()">🔄 重新读取</button>
+        <button class="secondary" onclick="clearCookie()" style="margin-left:auto;">🗑 清空</button>
+      </div>
+    </section>
+
+    <!-- 修改密码 (v4.9) -->
+    <section>
+      <h2>🔐 修改密码</h2>
+      <div class="grid grid-2">
+        <div>
+          <label>旧密码</label>
+          <input id="old-pw" type="password">
+        </div>
+        <div>
+          <label>新密码（≥6 位）</label>
+          <input id="new-pw" type="password">
+        </div>
+      </div>
+      <button onclick="changePassword()">改密码</button>
+    </section>
+
+    <!-- 操作日志 -->
+    <section>
+      <h2>📜 操作日志 (v4: 工具调用历史)</h2>
+      <pre id="logs">加载中…</pre>
+      <button class="secondary" onclick="loadLogs()">刷新</button>
+    </section>
+
+    <!-- 视频理解 -->
+    <section>
+      <h2>🎬 视频理解</h2>
+      <div id="understandings">加载中…</div>
+    </section>
+
+    <!-- 归档 -->
+    <section>
+      <h2>🔥 归档高分内容</h2>
+      <div id="highlights">加载中…</div>
+    </section>
+
+    <!-- OpenAPI (v4 新) -->
+    <section>
+      <h2>🛠 OpenAPI 工具清单 (v4)</h2>
+      <p style="color: var(--muted); font-size: 13px;">
+        给 OpenClaw AI 看：<code>bin/bilibili-autonomous openapi</code> 也输出相同 JSON
+      </p>
+      <pre id="openapi">加载中…</pre>
+    </section>
+  </div>
+</main>
+
+<script>
+const DISCLAIMER_KEY = 'ba_v4_disclaimer_ok';
+
+// ===== 工具函数 =====
+async function api(path, opts = {}) {
+  const r = await fetch(path, { credentials: 'same-origin', ...opts,
+    headers: { 'Content-Type': 'application/json', ...(opts.headers||{}) }});
+  let data;
+  try { data = await r.json(); } catch(e) { data = {error: '非 JSON'}; }
+  return { ok: r.ok, status: r.status, data };
+}
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'show ' + type;
+  setTimeout(() => { el.className = ''; }, 2400);
+}
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+// ===== 配置块元信息（v4 分组美化）=====
+const SECTION_META = {
+  energy: { label: '🔋 精力值系统', help: '默认 20；每视频消耗 1；≤0 停止 30min；可关闭 = 无限', order: 1 },
+  favorite: { label: '🔖 关键词收藏', help: '视频标题/UP/简介含关键词 → 自动收藏', order: 2 },
+  autonomy: { label: '🛡 总开关 + 概率', help: '所有自动操作的开关 + 触发概率', order: 3 },
+  scoring: { label: '📈 评分阈值', help: 'OpenClaw 给的 score 达到阈值才执行', order: 4 },
+  interaction: { label: '💬 互动限制', help: '每日上限 + 间隔', order: 5 },
+  danmaku: { label: '💬 弹幕', help: '弹幕开关 + 概率 + 日上限', order: 6 },
+  dm: { label: '📨 私信', help: '回私信 / 主动私信', order: 7 },
+  follow: { label: '➕ UP 主关注', help: '关注 UP / 取关不活跃 UP', order: 8 },
+  reply_safety: { label: '🛡 安全过滤', help: '敏感词 + 政治视频', order: 9 },
+  behavior: { label: '⚙️ 行为', help: '通用行为', order: 10 },
+  web_panel: { label: '🌐 Web 面板', help: 'Web 端口/绑定', order: 11 },
+};
+
+function sectionOrder(k) {
+  return (SECTION_META[k] && SECTION_META[k].order) || 99;
+}
+
+// ===== Auth =====
+async function bootstrap() {
+  if (!localStorage.getItem(DISCLAIMER_KEY)) { show('disclaimer'); return; }
+  const r = await api('/api/auth/status');
+  if (r.data.status === 'setup_required') { show('setup'); return; }
+  if (r.data.status === 'needs_login')   { show('login'); return; }
+  enterMain();
+}
+function acceptDisclaimer() {
+  if (document.getElementById('disclaimer-input').value.trim() !== '我同意') {
+    toast('请输入"我同意"', 'err'); return;
+  }
+  localStorage.setItem(DISCLAIMER_KEY, '1');
+  hide('disclaimer'); bootstrap();
+}
+async function doSetup() {
+  const user = document.getElementById('setup-user').value.trim();
+  const password = document.getElementById('setup-pw').value;
+  const r = await api('/api/auth/setup', { method:'POST',
+    body: JSON.stringify({user, password}) });
+  if (!r.ok) { toast(r.data.error || '设置失败', 'err'); return; }
+  toast('设置成功', 'ok'); hide('setup'); enterMain();
+}
+async function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pw').value;
+  const r = await api('/api/auth/login', { method:'POST',
+    body: JSON.stringify({user, password}) });
+  if (!r.ok) { toast(r.data.error || '登录失败', 'err'); return; }
+  toast('登录成功', 'ok'); hide('login'); enterMain();
+}
+async function doLogout() {
+  await api('/api/auth/logout', { method:'POST' });
+  localStorage.removeItem(DISCLAIMER_KEY);
+  location.reload();
+}
+
+// ===== 主面板 =====
+async function enterMain() {
+  show('main');
+  document.getElementById('user-area').innerHTML =
+    '<span class="badge green">已登录</span> <button class="secondary" onclick="doLogout()">登出</button>';
+  await Promise.all([loadState(), loadConfig(), loadWebSettings(),
+                     loadCookie(),
+                     loadLogs(), loadUnderstandings(),
+                     loadHighlights(), loadOpenapi()]);
+}
+
+// ===== State =====
+async function loadState() {
+  const r = await api('/api/state');
+  if (!r.ok) return;
+  const s = r.data;
+
+  // 状态卡片
+  const counts = s.state.counts || {};
+  const maxd = s.state.max_per_day || {};
+  const stats = [
+    { label: '观看', val: counts.videos_watched || 0 },
+    { label: '点赞', val: counts.likes || 0 },
+    { label: '投币', val: `${counts.coins||0}/${maxd.coins||'-'}` },
+    { label: '评论', val: `${counts.comments||0}/${maxd.comments||'-'}` },
+    { label: '弹幕', val: `${counts.danmaku||0}/${maxd.danmaku||'-'}` },
+    { label: '收藏', val: counts.favorites || 0 },
+  ];
+  document.getElementById('state-stats').innerHTML =
+    stats.map(s => `<div class="stat-card"><div class="val">${s.val}</div>
+                    <div class="label">${s.label}</div></div>`).join('');
+
+  // 精力值
+  const energy = s.energy || {};
+  document.getElementById('energy-display').innerHTML = `
+    <div class="grid grid-3">
+      <div class="stat-card"><div class="val">${energy.current||0}</div>
+        <div class="label">当前 / ${energy.max||20}</div></div>
+      <div class="stat-card"><div class="val">${energy.disabled?'关':'开'}</div>
+        <div class="label">精力功能</div></div>
+      <div class="stat-card"><div class="val">${energy.refill_seconds||1800}s</div>
+        <div class="label">恢复时长</div></div>
+    </div>
+    ${energy.exhausted_until ? `<p style="color:#ff9800">⚠ 精力耗尽，resume at <code>${energy.exhausted_until}</code></p>` : ''}
+  `;
+
+  // 归档
+  document.getElementById('highlights-list').innerHTML = (s.archive.latest || []).length === 0
+    ? '<li style="color:var(--muted)">无</li>'
+    : (s.archive.latest || []).map(h =>
+        `<li>📁 [${h.category}] 《${h.title}》 ${h.score}/10</li>`).join('');
+
+  // v5.1 心情
+  const mood = s.mood || {};
+  const moodEl = document.getElementById('mood-display');
+  if (moodEl) {
+    moodEl.innerHTML = `
+      <div class="grid grid-3">
+        <div class="stat-card"><div class="val">${mood.current || '平静'}</div>
+          <div class="label">心情</div></div>
+        <div class="stat-card"><div class="val">${mood.energy || 0}/100</div>
+          <div class="label">精力 (${mood.level || 'mid'})</div></div>
+        <div class="stat-card"><div class="val">${mood.auto_change ? '开' : '关'}</div>
+          <div class="label">自动变化</div></div>
+      </div>
+      <p style="color:var(--muted); font-size:12px; margin-top:8px;">${mood.style_modifier || ''}</p>
+    `;
+  }
+}
+
+// ===== Config (按块分组美化) =====
+let _cfg = {};
+async function loadConfig() {
+  const r = await api('/api/config');
+  if (!r.ok) { toast('加载配置失败', 'err'); return; }
+  _cfg = r.data;
+  document.getElementById('config-form').innerHTML = renderConfig(_cfg);
+}
+function renderConfig(c) {
+  const keys = Object.keys(c).sort((a,b) => sectionOrder(a) - sectionOrder(b));
+  return keys.map(sec => {
+    const meta = SECTION_META[sec] || { label: sec, help: '' };
+    return `
+      <section class="tool-section" data-sec="${sec}">
+        <h3>${meta.label} <span class="help">${meta.help}</span></h3>
+        ${renderFields(sec, c[sec])}
+      </section>
+    `;
+  }).join('');
+}
+function renderFields(sec, body) {
+  return Object.entries(body || {}).map(([k, v]) => {
+    let ctrl;
+    if (typeof v === 'boolean') {
+      ctrl = `<input type="checkbox" ${v ? 'checked' : ''} data-sec="${sec}" data-key="${k}" data-type="bool">`;
+    } else if (typeof v === 'number') {
+      ctrl = `<input type="number" step="0.01" value="${v}" data-sec="${sec}" data-key="${k}" data-type="num">`;
+    } else if (Array.isArray(v)) {
+      ctrl = `<textarea rows="3" data-sec="${sec}" data-key="${k}" data-type="list">${
+          v.map(x => String(x).replace(/</g,'&lt;')).join('\n')}</textarea>`;
+    } else if (typeof v === 'object' && v !== null) {
+      ctrl = `<textarea rows="6" data-sec="${sec}" data-key="${k}" data-type="json">${
+        JSON.stringify(v, ensure_ascii=False, 2).replace(/</g, '&lt;')}</textarea>`;
+    } else {
+      ctrl = `<input value="${(v ?? '').toString().replace(/"/g,'&quot;')}" data-sec="${sec}" data-key="${k}" data-type="str">`;
+    }
+    return `<label>${k}${ctrl}</label>`;
+  }).join('');
+}
+async function saveConfig() {
+  const payload = {};
+  document.querySelectorAll('[data-sec]').forEach(el => {
+    const sec = el.dataset.sec, key = el.dataset.key, t = el.dataset.type;
+    payload[sec] = payload[sec] || {};
+    if (t === 'bool') payload[sec][key] = el.checked;
+    else if (t === 'num') payload[sec][key] = parseFloat(el.value);
+    else if (t === 'list') payload[sec][key] = el.value.split('\n').map(s => s.trim()).filter(Boolean);
+    else if (t === 'json') {
+      try { payload[sec][key] = JSON.parse(el.value); }
+      catch(e) { payload[sec][key] = el.value; }
+    } else payload[sec][key] = el.value;
+  });
+  const r = await api('/api/config', { method:'POST', body: JSON.stringify(payload) });
+  if (!r.ok) { toast(r.data.error || '保存失败', 'err'); return; }
+  toast('✅ 已保存: ' + (r.data.updated || []).join(', '), 'ok');
+  loadConfig();
+}
+
+// ===== Web Settings =====
+async function loadWebSettings() {
+  const r = await api('/api/config');
+  if (!r.ok) return;
+  const w = r.data.web_panel || {};
+  document.getElementById('web-bind').value = w.bind || '127.0.0.1';
+  document.getElementById('web-port').value = w.port || 8765;
+}
+async function saveWebSettings() {
+  const payload = {
+    bind: document.getElementById('web-bind').value,
+    port: parseInt(document.getElementById('web-port').value, 10),
+  };
+  const r = await api('/api/web/settings', { method:'POST', body: JSON.stringify(payload) });
+  if (!r.ok) { toast(r.data.error || '保存失败', 'err'); return; }
+  toast('Web 设置已保存（端口改动需重启进程）', 'ok');
+}
+
+// ===== Cookie (v5.9) =====
+async function loadCookie() {
+  const r = await api('/api/cookie');
+  const el = document.getElementById('cookie-status');
+  if (!r.ok) { el.textContent = '加载失败'; return; }
+  const d = r.data;
+  const fields = ['SESSDATA','bili_jct','DedeUserID','ac_time_value'];
+  const rows = fields.map(k => {
+    const ok = d.present.includes(k);
+    const show = (d.masked && d.masked[k]) || '(未配置)';
+    return `<tr><td>${ok ? '✅' : '❌'}</td><td>${k}</td><td><code>${show}</code></td></tr>`;
+  }).join('');
+  el.innerHTML = `<table><tr><th></th><th>字段</th><th>当前</th></tr>${rows}</table>
+    <p style="color: var(--muted); font-size: 12px; margin-top:6px;">
+      ${d.complete ? '<b style="color:var(--green)">完整 4/4</b>' :
+        `<b style="color:var(--orange)">${d.count}/4，缺 ${(d.missing||[]).join(', ')}</b>`}
+    </p>`;
+}
+async function saveCookie() {
+  const raw = document.getElementById('cookie-input').value.trim();
+  if (!raw) { toast('Cookie 字符串为空', 'err'); return; }
+  const r = await api('/api/cookie', { method:'POST',
+    body: JSON.stringify({cookie: raw}) });
+  if (!r.ok) { toast(r.data.error || r.data.hint || '保存失败', 'err'); return; }
+  toast('✅ 已保存 ' + (r.data.parsed || []).join(', '), 'ok');
+  document.getElementById('cookie-input').value = '';
+  loadCookie();
+}
+async function clearCookie() {
+  if (!confirm('确认清空所有 Cookie？')) return;
+  const r = await api('/api/cookie/clear', { method:'POST' });
+  if (!r.ok) { toast('清空失败', 'err'); return; }
+  toast('已清空', 'ok'); loadCookie();
+}
+
+// ===== 修改密码 (v4.9) =====
+async function changePassword() {
+  const oldPw = document.getElementById('old-pw').value;
+  const newPw = document.getElementById('new-pw').value;
+  if (!oldPw || !newPw) { toast('旧/新密码都必填', 'err'); return; }
+  if (newPw.length < 6) { toast('新密码 ≥ 6 位', 'err'); return; }
+  const r = await api('/api/auth/change-password', {
+    method:'POST', body: JSON.stringify({old: oldPw, new: newPw})
+  });
+  if (!r.ok) { toast(r.data.error || '失败', 'err'); return; }
+  toast('✅ 密码已改，5s 后强制重新登录', 'ok');
+  setTimeout(() => location.reload(), 5000);
+}
+
+// ===== Logs =====
+async function loadLogs() {
+  const r = await api('/tools-log?tail=50');
+  if (!r.ok) { document.getElementById('logs').textContent = '加载失败'; return; }
+  const lines = (r.data.entries || []).map(e => JSON.stringify(e)).join('\n');
+  document.getElementById('logs').textContent = lines || '(无)';
+}
+
+// ===== Understandings / Highlights =====
+async function loadUnderstandings() {
+  const r = await api('/api/understandings');
+  const files = r.data.files || [];
+  document.getElementById('understandings').innerHTML = files.length === 0
+    ? '<i style="color: var(--muted)">暂无</i>'
+    : '<table><tr><th>文件名</th><th>大小</th></tr>' +
+      files.slice(0, 10).map(f => `<tr><td>${f.filename}</td>
+      <td>${(f.size/1024).toFixed(1)} KB</td></tr>`).join('') + '</table>';
+}
+async function loadHighlights() {
+  const r = await api('/api/highlights');
+  const files = r.data.files || [];
+  document.getElementById('highlights').innerHTML = files.length === 0
+    ? '<i style="color: var(--muted)">暂无</i>'
+    : '<table><tr><th>分类</th><th>文件</th></tr>' +
+      files.slice(0, 10).map(f => `<tr><td>${f.category}</td>
+      <td>${f.filename}</td></tr>`).join('') + '</table>';
+}
+
+// ===== OpenAPI =====
+async function loadOpenapi() {
+  const r = await api('/openapi.json');
+  if (!r.ok) { document.getElementById('openapi').textContent = '加载失败'; return; }
+  // 只列 paths
+  const lines = ['# OpenClaw 可以调的工具清单', '',
+    'servers:', '  http://127.0.0.1:8765', ''];
+  for (const [path, methods] of Object.entries(r.data.paths || {})) {
+    for (const [method, info] of Object.entries(methods || {})) {
+      lines.push(`${method.toUpperCase().padEnd(6)} ${path}  # ${info.summary}`);
+    }
+  }
+  document.getElementById('openapi').textContent = lines.join('\n');
+}
+
+bootstrap();
+</script>
+</body>
+</html>
