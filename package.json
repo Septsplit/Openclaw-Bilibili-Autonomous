@@ -1,24 +1,19 @@
 {
   "name": "bilibili-autonomous",
-  "version": "4.0.0",
-  "description": "Heartbeat-driven B站 browsing and human-like interaction",
+  "version": "5.9.0",
+  "description": "Heartbeat-driven B站 browsing and human-like interaction CLI + Web panel",
   "main": "src/main.py",
   "bin": {
     "bilibili-autonomous": "./bin/bilibili-autonomous"
   },
   "scripts": {
-    "run": "python3 src/main.py run",
-    "status": "python3 src/main.py status",
-    "dry-run": "python3 src/main.py --dry-run run"
+    "status": "python3 src/main.py status"
   },
   "openclaw": {
-    "type": "executable",
+    "type": "skill",
     "entrypoint": "bin/bilibili-autonomous",
     "runtime": "python3"
   },
-  "requirements": [
-    "bilibili-api==16.0.0",
-    "openai>=1.0.0",
-    "colorama>=0.4.6"
-  ]
+  "keywords": ["bilibili", "openclaw", "automation", "bot"],
+  "license": "MIT"
 }
